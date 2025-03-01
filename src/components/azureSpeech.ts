@@ -5,8 +5,6 @@ import { AZURE_SPEECH_KEY, AZURE_SPEECH_REGION } from '@env';
 
 const azureEndpoint = `https://${AZURE_SPEECH_REGION}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=detailed`;
 
-// const azureEndpoint = `https://${AZURE_SPEECH_REGION}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US`;
-
 export const transcribeAudio = async (audioFilePath: string) => {
     try {
       const audioData = await RNFS.readFile(audioFilePath, 'base64');
