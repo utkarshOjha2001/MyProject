@@ -16,6 +16,7 @@ export const startRecording = () => {
     AudioRecord.init(options);
     AudioRecord.start();
   };
+  
   export const stopRecording = async (): Promise<string> => {
     const audioFile = await AudioRecord.stop();
     const filePath = `${RNFS.DocumentDirectoryPath}/${options.wavFile}`;

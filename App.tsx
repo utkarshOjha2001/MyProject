@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { startRecording, stopRecording } from './src/components/audioRecorder';
+import Sound from 'react-native-sound';
+import RNFS from 'react-native-fs';
 import { transcribeAudio } from './src/components/azureSpeech';
 import {
   StyleSheet,
@@ -42,6 +44,50 @@ const App = (): React.JSX.Element => {
     requestPermissions();
   }, []);
 
+  const fetchAudioData = async (message: string) => {
+    console.log(message)
+    try {
+      const response = await fetch(`http://192.168.1.102:8000/api`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      });
+      if (!response.ok) throw new Error('Failed to fetch audio');
+
+      const audioBlob = await response.blob();
+      const reader = new FileReader();
+
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        const base64Audio = reader.result?.toString().split(',')[1];
+
+        if (!base64Audio) {
+          console.error('Error converting blob to base64');
+          return;
+        }
+
+        const filePath = `${RNFS.DocumentDirectoryPath}/response_audio.mp3`;
+        await RNFS.writeFile(filePath, base64Audio, 'base64');
+        const sound = new Sound(filePath, '', (error) => {
+          if (error) {
+            console.error('Error loading audio:', error);
+            return;
+          }
+          sound.play((success) => {
+            if (success) {
+              console.log('Audio played successfully');
+              startRecording(); // Restart recording after audio ends
+            } else {
+              console.error('Audio playback failed');
+            }
+          });
+        });
+      };
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleMicPress = async () => {
     if (!hasPermission) {
       console.warn('Microphone permission not granted');
@@ -53,6 +99,7 @@ const App = (): React.JSX.Element => {
       setIsRecording(false);
       const text = await transcribeAudio(filePath);
       setTranscription(text || 'Could not transcribe');
+      await fetchAudioData(text);
     } else {
       setIsRecording(true);
       startRecording();
