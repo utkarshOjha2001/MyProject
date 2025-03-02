@@ -4,10 +4,10 @@ import RNFS from 'react-native-fs';
 
 
 const options = {
-    sampleRate: 16000, // 16kHz
-    channels: 1, // Mono
-    bitsPerSample: 16, // PCM 16-bit
-    wavFile: 'test_audio.wav' // File name
+    sampleRate: 16000,
+    channels: 1,
+    bitsPerSample: 16, 
+    wavFile: 'test_audio.wav'
   };
 const audioRecorderPlayer = new AudioRecorderPlayer();
 const audioPath = `${RNFS.DocumentDirectoryPath}/speech.wav`;
@@ -25,5 +25,5 @@ export const startRecording = () => {
       return '';
     }
   
-    return filePath; // Return file path to send to Azure
+    return filePath;
   };

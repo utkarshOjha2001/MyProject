@@ -35,7 +35,7 @@ const App = (): React.JSX.Element => {
           console.error('Permission request failed:', error);
         }
       } else {
-        setHasPermission(true); 
+        setHasPermission(true);
       }
     };
 
