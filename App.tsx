@@ -18,7 +18,6 @@ const App = (): React.JSX.Element => {
   const [transcription, setTranscription] = useState<string>('');
   const [hasPermission, setHasPermission] = useState<boolean>(false);
 
-
   useEffect(() => {
     const requestPermissions = async () => {
       if (Platform.OS === 'android') {
@@ -44,39 +43,52 @@ const App = (): React.JSX.Element => {
     requestPermissions();
   }, []);
 
+  // Function to handle API calls after silence detection
+  const processAudio = async (filePath: string) => {
+    const text = await transcribeAudio(filePath);
+    setTranscription(text || 'Could not transcribe');
+
+    if (text) {
+      await fetchAudioData(text);
+    }
+  };
+
   const fetchAudioData = async (message: string) => {
-    console.log(message)
+    console.log(message);
     try {
       const response = await fetch(`http://192.168.1.102:8000/api`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       });
+  
       if (!response.ok) throw new Error('Failed to fetch audio');
-
+  
       const audioBlob = await response.blob();
       const reader = new FileReader();
-
+  
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
         const base64Audio = reader.result?.toString().split(',')[1];
-
+  
         if (!base64Audio) {
           console.error('Error converting blob to base64');
           return;
         }
-
+  
         const filePath = `${RNFS.DocumentDirectoryPath}/response_audio.mp3`;
         await RNFS.writeFile(filePath, base64Audio, 'base64');
+  
         const sound = new Sound(filePath, '', (error) => {
           if (error) {
             console.error('Error loading audio:', error);
             return;
           }
+  
           sound.play((success) => {
             if (success) {
               console.log('Audio played successfully');
-              startRecording(); // Restart recording after audio ends
+              startRecording(onSilenceDetected);
             } else {
               console.error('Audio playback failed');
             }
@@ -87,6 +99,22 @@ const App = (): React.JSX.Element => {
       console.error(error);
     }
   };
+  
+
+  const onSilenceDetected = async () => {
+    console.log('Silence detected, processing audio...');
+    const filePath = await stopRecording();
+    setIsRecording(false);
+  
+    const text = await transcribeAudio(filePath);
+    setTranscription(text || 'Could not transcribe');
+  
+    if (text) {
+      await fetchAudioData(text);
+    } else {
+      startRecording(onSilenceDetected);
+    }
+  };
 
   const handleMicPress = async () => {
     if (!hasPermission) {
@@ -95,14 +123,13 @@ const App = (): React.JSX.Element => {
     }
 
     if (isRecording) {
-      const filePath = await stopRecording();
+      console.log("Stopping recording...");
+      await stopRecording();
       setIsRecording(false);
-      const text = await transcribeAudio(filePath);
-      setTranscription(text || 'Could not transcribe');
-      await fetchAudioData(text);
     } else {
+      console.log("Starting recording...");
       setIsRecording(true);
-      startRecording();
+      startRecording(onSilenceDetected);
     }
   };
 
