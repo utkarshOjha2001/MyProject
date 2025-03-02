@@ -26,6 +26,7 @@ export const transcribeAudio = async (audioFilePath: string) => {
       console.log('Azure Response:', data);
   
       if (data.RecognitionStatus === 'Success') {
+        
         return data.DisplayText || data.NBest?.[0]?.Display || '[No speech detected]';
       } else {
         return `[Recognition failed: ${data.RecognitionStatus}]`;

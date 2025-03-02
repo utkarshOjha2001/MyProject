@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { endpoint } from './src/api/service';
 import { startRecording, stopRecording } from './src/components/audioRecorder';
 import Sound from 'react-native-sound';
 import RNFS from 'react-native-fs';
@@ -17,6 +18,7 @@ const App = (): React.JSX.Element => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [transcription, setTranscription] = useState<string>('');
   const [hasPermission, setHasPermission] = useState<boolean>(false);
+  const [auth, setAuth] = useState<boolean>(false);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -43,52 +45,79 @@ const App = (): React.JSX.Element => {
     requestPermissions();
   }, []);
 
-  // Function to handle API calls after silence detection
-  const processAudio = async (filePath: string) => {
-    const text = await transcribeAudio(filePath);
-    setTranscription(text || 'Could not transcribe');
-
-    if (text) {
-      await fetchAudioData(text);
-    }
+  const playActivationSound = () => {
+    return new Promise((resolve) => {
+      const activationSound = new Sound('hey_livewire.mp3', Sound.MAIN_BUNDLE, (error) => {
+        if (error) {
+          console.error('Error loading activation sound:', error);
+          resolve(false);
+          return;
+        }
+        console.log('Activation sound loaded successfully');
+        activationSound.play((success) => {
+          if (success) {
+            console.log('Activation sound played successfully');
+            resolve(true);
+          } else {
+            console.error('Activation sound playback failed');
+            resolve(false);
+          }
+        });
+      });
+    });
   };
 
   const fetchAudioData = async (message: string) => {
-    console.log(message);
+    if (!auth && message.toLowerCase().includes('hey')) {
+      setAuth(true);
+      const soundPlayed = await playActivationSound();
+      if (soundPlayed) {
+        setIsRecording(false);
+        handleMicPress();
+      return;
+      }
+    }
+
+    // if (!auth) {
+    //   console.log("Waiting for 'hey'... Restarting mic.");
+    //   startRecording(onSilenceDetected);
+    //   return;
+    // }
+
     try {
-      const response = await fetch(`http://192.168.1.102:8000/api`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       });
-  
+
       if (!response.ok) throw new Error('Failed to fetch audio');
-  
+
       const audioBlob = await response.blob();
       const reader = new FileReader();
-  
+
       reader.readAsDataURL(audioBlob);
       reader.onloadend = async () => {
         const base64Audio = reader.result?.toString().split(',')[1];
-  
+
         if (!base64Audio) {
           console.error('Error converting blob to base64');
           return;
         }
-  
+
         const filePath = `${RNFS.DocumentDirectoryPath}/response_audio.mp3`;
         await RNFS.writeFile(filePath, base64Audio, 'base64');
-  
+
         const sound = new Sound(filePath, '', (error) => {
           if (error) {
             console.error('Error loading audio:', error);
             return;
           }
-  
+
           sound.play((success) => {
             if (success) {
               console.log('Audio played successfully');
-              startRecording(onSilenceDetected);
+              startRecording(onSilenceDetected); // 🔹 Restart mic after response
             } else {
               console.error('Audio playback failed');
             }
@@ -98,22 +127,25 @@ const App = (): React.JSX.Element => {
     } catch (error) {
       console.error(error);
     }
+   
   };
-  
 
   const onSilenceDetected = async () => {
     console.log('Silence detected, processing audio...');
     const filePath = await stopRecording();
     setIsRecording(false);
-  
+
     const text = await transcribeAudio(filePath);
     setTranscription(text || 'Could not transcribe');
-  
-    if (text) {
-      await fetchAudioData(text);
-    } else {
+
+    if (!text || text === '[No speech detected]') {
+      setAuth(false);
+      console.log("No speech detected. Restarting mic.");
       startRecording(onSilenceDetected);
+      return;
     }
+
+    await fetchAudioData(text);
   };
 
   const handleMicPress = async () => {

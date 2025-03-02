@@ -16,15 +16,15 @@ export const startRecording = (onSilenceDetected: () => void) => {
 
   AudioRecord.on('data', (data: any) => {
     const level = Math.max(...new Int16Array(data));
-    console.log('Audio level:', level); // Debugging
+    console.log('Audio level:', level); 
 
-    if (level < 500) { // Silence threshold
+    if (level < 500) {
       if (!silenceTimeout) {
         silenceTimeout = setTimeout(() => {
           silenceTimeout = null;
           console.log('Silence detected, stopping recording...');
           onSilenceDetected();
-        }, 3000); // 3 seconds of silence
+        }, 3000);
       }
     } else {
       if (silenceTimeout) {
@@ -36,6 +36,7 @@ export const startRecording = (onSilenceDetected: () => void) => {
 };
 
 export const stopRecording = async (): Promise<string> => {
+  
   const audioFile = await AudioRecord.stop();
   const filePath = `${RNFS.DocumentDirectoryPath}/${options.wavFile}`;
 

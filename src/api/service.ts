@@ -1,1 +1,1 @@
-
+export const endpoint = 'http://192.168.150.198:8003/api';
