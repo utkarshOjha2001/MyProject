@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   PermissionsAndroid,
   Platform,
+  Image
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -74,7 +75,7 @@ const App = (): React.JSX.Element => {
       if (soundPlayed) {
         setIsRecording(false);
         handleMicPress();
-      return;
+        return;
       }
     }
 
@@ -90,7 +91,6 @@ const App = (): React.JSX.Element => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message }),
       });
-
       if (!response.ok) throw new Error('Failed to fetch audio');
 
       const audioBlob = await response.blob();
@@ -127,7 +127,7 @@ const App = (): React.JSX.Element => {
     } catch (error) {
       console.error(error);
     }
-   
+
   };
 
   const onSilenceDetected = async () => {
@@ -166,34 +166,117 @@ const App = (): React.JSX.Element => {
   };
 
   return (
-    <LinearGradient colors={['#1d1843', '#1a1836', '#2a2a2a']} style={styles.container}>
+    <LinearGradient colors={['#181d49', '#101533', '#0b0f23']} style={styles.container}>
       <View style={styles.centerContainer}>
+        <View style={styles.imageMainContainer}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={require('./src/assets/images/audaxlogo.png')}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.logoText}>Audax AI</Text>
+          <Text style={styles.subHeadingText}>A personalized AI voice assistant.</Text>
+        </View>
         <Text style={styles.text}>{transcription || 'Tap the mic and start speaking...'}</Text>
         <TouchableOpacity onPress={handleMicPress} style={styles.micButton}>
-          <Text style={styles.micButton}>{isRecording ? '⏹' : '🎤'}</Text>
+          {isRecording ? (
+            <Text style={styles.micIcon}>⏹</Text>
+          ) : (
+            <Image
+              source={require('./src/assets/images/mic-pic.png')}
+              resizeMode="contain"
+              style={styles.micImage}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </LinearGradient>
+
+
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  text: { fontSize: 18, color: '#fff', textAlign: 'center', paddingHorizontal: 20 },
-  micButton: {
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: 30,
-    color: '#fff',
-    backgroundColor: '#DB5079',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    overflow: 'hidden',
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 30
   },
-  listening: { backgroundColor: '#28A745' },
-  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  micIcon: { fontSize: 30, color: '#fff' },
+
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+
+  imageMainContainer: {
+    flexDirection: 'column',
+    width: "60%",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  imageContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  image: {
+    width: '100%',
+    height: '100%',
+    aspectRatio: 1,
+  },
+
+  logoText: {
+    fontSize: 24,
+    color: "#fff",
+    fontWeight: '600',
+    letterSpacing: 1.5,
+    marginTop: 10,
+  },
+
+  subHeadingText: {
+    fontSize: 14,
+    color: "#ccc",
+    fontWeight: '400',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginTop: 5,
+  },
+
+  text: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+    marginVertical: 20
+  },
+
+  micButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#3180e7',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    display: 'flex'
+  },
+
+  micIcon: {
+    fontSize: 36,
+    color: '#fff',
+  },
+  micImage: {
+    width: 30,
+    height: 30,
+    tintColor: '#fff'
+  }
 });
+
 
 export default App;
